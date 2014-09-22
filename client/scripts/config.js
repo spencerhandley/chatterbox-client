@@ -4,7 +4,7 @@ if (!/(&|\?)username=/.test(window.location.search)) {
   if (newSearch !== '' & newSearch !== '?') {
     newSearch += '&';
   }
-  newSearch += 'username=' + (prompt('What is your name?') || 'anonymous');
+  newSearch += 'username=' + (prompt('What is your name?') || 'doood');
   window.location.search = newSearch;
 }
 // Don't worry about this code, it will ensure that your ajax calls are allowed by the browser
