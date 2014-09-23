@@ -73,6 +73,22 @@ form input[type=text] {
     background-color: #ddd;
 }
 
+#chat {
+    display: inline;
+
+
+}
+
+#rooms {
+    width: 200px;
+    display: inline;
+    float: right;
+    position: fixed;
+    top:0px;
+    left: 0px;
+    background-color: grey;
+}
+
 .spinner {
     float: right;
     height: 46px;

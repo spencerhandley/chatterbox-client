@@ -2,6 +2,7 @@
 $(document).ready(function(){
 
   var app = {
+    rooms: [],
     currentUser: {
       username: "dooode",
       friends: [],
@@ -30,6 +31,7 @@ $(document).ready(function(){
       });
     },
     fetch: function(){
+
       $.ajax({
         // always use this url
         url: 'https://api.parse.com/1/classes/chatterbox',
@@ -45,7 +47,40 @@ $(document).ready(function(){
             var filteredUN = data.results[i].username.replace(/[^\w\s]/gi, '')
             if(moment(data.results[i].createdAt).format("hhmmss") > moment(new Date()).format("hhmmss") - 1){
               console.log("new")
-              $("#chats").prepend("<p>" + moment(data.results[i].createdAt).format("D/M/YYYY, h:mma") + " " +filteredUN + ": " +filteredText +"</p>")
+              $("#chats").prepend("<p class='chat'>" + moment(data.results[i].createdAt).format("D/M/YYYY, h:mma") + " " +filteredUN + ": " +filteredText +"</p>")
+
+            }
+
+          }
+          console.log('chatterbox: Message sent');
+        },
+        error: function (data) {
+          // see: https://developer.mozilla.org/en-US/docs/Web/API/console.error
+          console.error('chatterbox: Failed to send message');
+        }
+      });
+
+    },
+    fetchRoom: function(roomname){
+
+      $.ajax({
+        // always use this url
+        url: 'https://api.parse.com/1/classes/chatterbox',
+        type: 'GET',
+        data: {
+          limit: 1000,
+          where: {"roomname": roomname},
+          order: "-createdAt"
+        },
+        // data: JSON.stringify(message),
+        contentType: 'application/jsonp',
+        success: function (data) {
+          for(var i =0; i<data.results.length; i++ ){
+            var filteredText = data.results[i].text.replace(/[^\w\s]/gi, '')
+            var filteredUN = data.results[i].username.replace(/[^\w\s]/gi, '')
+            if(moment(data.results[i].createdAt).format("hhmmss") > moment(new Date()).format("hhmmss") - 1){
+              console.log("new")
+              $("#chats").prepend("<p class='chat'>" + moment(data.results[i].createdAt).format("D/M/YYYY, h:mma") + " " +filteredUN + ": " +filteredText +"</p>")
 
             }
 
@@ -63,7 +98,7 @@ $(document).ready(function(){
       $("#chats").children().remove()
     },
     addMessage : function(msg){
-      $("#chats").prepend("<div> <p>" + msg + " </p> </div>")
+      $("#chats").prepend("<div class='chat'> <p>" + msg + " </p> </div>")
     },
     addRoom: function(room){
       $("#roomSelect").append("<div> <p>" + room + " </p> </div>")
@@ -75,6 +110,43 @@ $(document).ready(function(){
       var msg = {text: $("#send #message").val(), username: getQueryVariable("username"), roomname: "lobby" }
       app.send(msg)
       $("#send #message").val("");
+    },
+    pullRooms: function(){
+      $.ajax({
+        // always use this url
+        url: 'https://api.parse.com/1/classes/chatterbox',
+        type: 'GET',
+        data: {
+          limit: 1000,
+          order: "-createdAt"
+        },
+        // data: JSON.stringify(message),
+        contentType: 'application/jsonp',
+        success: function (data) {
+          // console.log(data)
+         for(var i = 0; i < data.results.length; i++){
+            if(data.results[i].roomname){
+              var filteredRoom = data.results[i].roomname.replace(/[^\w\s]/gi, '')
+            }
+
+            // console.log(filteredRoom)
+            if(app.rooms.indexOf(filteredRoom) == -1){
+              app.rooms.push(filteredRoom);
+
+            }
+         }
+         // console.log(app.rooms)
+         $("#rooms p").html("")
+         for(var i = 0; i < app.rooms.length; i++){
+
+          $("#rooms").append("<p>" + (i+1) + ": <a class='room "+app.rooms[i]+"' href='#' data-name='"+ app.rooms[i] +"''>" +app.rooms[i] +" </a><p>")
+         }
+        },
+        error: function (data) {
+          // see: https://developer.mozilla.org/en-US/docs/Web/API/console.error
+          console.error('chatterbox: Failed to send message');
+        }
+      });
     }
   }
 
@@ -84,6 +156,14 @@ $(document).ready(function(){
     app.handleSubmit()
 
   })
+
+  $(document).on("click", ".room", function(){
+    console.log($(this).data())
+    $("#chats").html("");
+    $(".roomTitle").text($(this).data().name)
+    app.fetchRoom($(this).data().name);
+  })
+
   function getQueryVariable(variable) {
       var query = window.location.search.substring(1);
       var vars = query.split('&');
@@ -94,6 +174,8 @@ $(document).ready(function(){
           }
       }
   }
+  app.pullRooms()
+  setInterval(function() {app.pullRooms()}, 10000)
   app.fetch()
   setInterval(function(){
     app.fetch()
