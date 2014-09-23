@@ -89,6 +89,9 @@ form input[type=text] {
     background-color: grey;
 }
 
+.highlighted {
+    background-color: yellow;
+}
 .spinner {
     float: right;
     height: 46px;

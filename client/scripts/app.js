@@ -48,17 +48,16 @@ $(document).ready(function(){
             for(var i =0; i<data.results.length; i++ ){
               var filteredText = data.results[i].text.replace(/[^\w\s]/gi, '')
               var filteredUN = data.results[i].username.replace(/[^\w\s]/gi, '')
-              console.log($("#chats").children().length)
-
-                $("#chats").append("<p class='chat'>" + moment(data.results[i].createdAt).format("D/M/YYYY, h:mma") + " " +filteredUN + ": " +filteredText +"</p>")
-
-
-              if(moment(data.results[i].createdAt).format("hhmmss") > moment(new Date()).format("hhmmss") - 1){
-                console.log("new")
-                $("#chats").append("<p class='chat'>" + moment(data.results[i].createdAt).format("D/M/YYYY, h:mma") + " " +filteredUN + ": " +filteredText +"</p>")
-
+              var message = {
+                 text : filteredText,
+                 username: filteredUN,
+                 createdAt: data.results[i].createdAt
               }
-
+              var highlightClass = _.contains(app.currentUser.friends, filteredUN) ? "highlighted" : "hey";
+              app.addMessage(message,highlightClass)
+              if(moment(data.results[i].createdAt).format("hhmmss") > moment(new Date()).format("hhmmss") - 1){
+                app.addMessage(message,highlightClass)
+              }
             }
           }
           console.log('chatterbox: Message sent');
@@ -87,16 +86,17 @@ $(document).ready(function(){
           for(var i =0; i<data.results.length; i++ ){
             var filteredText = data.results[i].text.replace(/[^\w\s]/gi, '')
             var filteredUN = data.results[i].username.replace(/[^\w\s]/gi, '')
-                $("#chats").append("<p class='chat'>" + moment(data.results[i].createdAt).format("D/M/YYYY, h:mma") + " " +filteredUN + ": " +filteredText +"</p>")
-
+            var highlightClass = _.contains(app.currentUser.friends,filteredUN) ? "highlighted" : "";
+            var message = {
+                 text : filteredText,
+                 username: filteredUN,
+                 createdAt: data.results[i].createdAt
+              }
+            app.addMessage(message,highlightClass)
             if(moment(data.results[i].createdAt).format("hhmmss") > moment(new Date()).format("hhmmss") - 1){
-              console.log("new")
-              $("#chats").append("<p class='chat'>" + moment(data.results[i].createdAt).format("D/M/YYYY, h:mma") + " " +filteredUN + ": " +filteredText +"</p>")
-
+              app.addMessage(message,highlightClass)
             }
-
           }
-          console.log('chatterbox: Message sent');
         },
         error: function (data) {
           // see: https://developer.mozilla.org/en-US/docs/Web/API/console.error
@@ -108,14 +108,15 @@ $(document).ready(function(){
     clearMessages : function(){
       $("#chats").children().remove()
     },
-    addMessage : function(msg){
-      $("#chats").prepend("<div class='chat '> <p>" + msg + " </p> </div>")
+    addMessage : function(msg, highclass){
+      $("#chats").append("<p class='chat "+ highclass +"' data-username='"+msg.username+"'>" + moment(msg.createdAt).format("D/M/YYYY, h:mma") + " " +msg.username + ": " +msg.text +"</p>")
     },
-    addRoom: function(room){
-      $("#roomSelect").append("<div> <p>" + room + " </p> </div>")
+    addRoom: function(index, room){
+      $("#rooms").append("<p>" + (index+1) + ": <a class='room "+room+"' href='#' data-name='"+ room +"''>" +room +" </a><p>")
     },
     addFriend: function(user){
-      app.user.friends.push(user)
+      var filteredUN = user.replace(/[^\w\s]/gi, '')
+      app.currentUser.friends.push(filteredUN);
     },
     handleSubmit: function(){
       var msg = {text: $("#send #message").val(), username: getQueryVariable("username"), roomname: app.currentRoom }
@@ -131,30 +132,24 @@ $(document).ready(function(){
           limit: 1000,
           order: "-createdAt"
         },
-        // data: JSON.stringify(message),
         contentType: 'application/jsonp',
         success: function (data) {
-          // console.log(data)
          for(var i = 0; i < data.results.length; i++){
             if(data.results[i].roomname){
               var filteredRoom = data.results[i].roomname.replace(/[^\w\s]/gi, '')
             }
 
-            // console.log(filteredRoom)
             if(app.rooms.indexOf(filteredRoom) == -1){
               app.rooms.push(filteredRoom);
 
             }
          }
-         // console.log(app.rooms)
          $("#rooms p").html("")
          for(var i = 0; i < app.rooms.length; i++){
-
-          $("#rooms").append("<p>" + (i+1) + ": <a class='room "+app.rooms[i]+"' href='#' data-name='"+ app.rooms[i] +"''>" +app.rooms[i] +" </a><p>")
+          app.addRoom(i, app.rooms[i])
          }
         },
         error: function (data) {
-          // see: https://developer.mozilla.org/en-US/docs/Web/API/console.error
           console.error('chatterbox: Failed to send message');
         }
       });
@@ -166,9 +161,13 @@ $(document).ready(function(){
     app.handleSubmit()
 
   })
+  $(document).on("click", ".chat", function(){
+    app.addFriend($(this).data().username)
+    $("#chats").html("");
+    app.fetchRoom(app.currentRoom)
+  })
 
   $(document).on("click", ".room", function(){
-    // window.location.search = "username=" + getQueryVariable("username") +"&room=" + $(this).data().name
     console.log($(this).data())
     $("#chats").html("");
     $(".roomTitle").text($(this).data().name);
@@ -186,6 +185,17 @@ $(document).ready(function(){
           }
       }
   }
+
+  $("#addRoom .submitRoom").click(function(){
+    event.preventDefault();
+    var roomName = $("#roomName").val()
+    console.log(roomName)
+    app.addRoom(0, roomName);
+    app.rooms++
+    app.currentRoom = roomName;
+    $("#chats").html("");
+    $(".roomTitle").text(roomName);
+  })
   app.pullRooms()
   setInterval(function() {app.pullRooms()}, 10000)
   app.fetch()
