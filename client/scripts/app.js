@@ -2,6 +2,7 @@
 $(document).ready(function(){
 
   var app = {
+    currentRoom: "lobby",
     rooms: [],
     currentUser: {
       username: "dooode",
@@ -21,7 +22,7 @@ $(document).ready(function(){
           var filteredText = message.text.replace(/[^\w\s]/gi, '')
           var filteredUN = message.username.replace(/[^\w\s]/gi, '')
 
-          $("#chats").prepend("<p>" + moment(data.createdAt).format("D/M/YYYY, h:mma") + " " + filteredUN + ": " + filteredText +"</p>")
+          $("#chats").prepend("<p class='chat'>" + moment(data.createdAt).format("D/M/YYYY, h:mma") + " " + filteredUN + ": " + filteredText +"</p>")
           console.log('chatterbox: Message sent');
         },
         error: function (data) {
@@ -37,20 +38,28 @@ $(document).ready(function(){
         url: 'https://api.parse.com/1/classes/chatterbox',
         type: 'GET',
         data: {
+          limit: 200,
           order: "-createdAt"
         },
         // data: JSON.stringify(message),
         contentType: 'application/jsonp',
         success: function (data) {
-          for(var i =0; i<data.results.length; i++ ){
-            var filteredText = data.results[i].text.replace(/[^\w\s]/gi, '')
-            var filteredUN = data.results[i].username.replace(/[^\w\s]/gi, '')
-            if(moment(data.results[i].createdAt).format("hhmmss") > moment(new Date()).format("hhmmss") - 1){
-              console.log("new")
-              $("#chats").prepend("<p class='chat'>" + moment(data.results[i].createdAt).format("D/M/YYYY, h:mma") + " " +filteredUN + ": " +filteredText +"</p>")
+          if($("#chats").children().length < 1){
+            for(var i =0; i<data.results.length; i++ ){
+              var filteredText = data.results[i].text.replace(/[^\w\s]/gi, '')
+              var filteredUN = data.results[i].username.replace(/[^\w\s]/gi, '')
+              console.log($("#chats").children().length)
+
+                $("#chats").append("<p class='chat'>" + moment(data.results[i].createdAt).format("D/M/YYYY, h:mma") + " " +filteredUN + ": " +filteredText +"</p>")
+
+
+              if(moment(data.results[i].createdAt).format("hhmmss") > moment(new Date()).format("hhmmss") - 1){
+                console.log("new")
+                $("#chats").append("<p class='chat'>" + moment(data.results[i].createdAt).format("D/M/YYYY, h:mma") + " " +filteredUN + ": " +filteredText +"</p>")
+
+              }
 
             }
-
           }
           console.log('chatterbox: Message sent');
         },
@@ -78,9 +87,11 @@ $(document).ready(function(){
           for(var i =0; i<data.results.length; i++ ){
             var filteredText = data.results[i].text.replace(/[^\w\s]/gi, '')
             var filteredUN = data.results[i].username.replace(/[^\w\s]/gi, '')
+                $("#chats").append("<p class='chat'>" + moment(data.results[i].createdAt).format("D/M/YYYY, h:mma") + " " +filteredUN + ": " +filteredText +"</p>")
+
             if(moment(data.results[i].createdAt).format("hhmmss") > moment(new Date()).format("hhmmss") - 1){
               console.log("new")
-              $("#chats").prepend("<p class='chat'>" + moment(data.results[i].createdAt).format("D/M/YYYY, h:mma") + " " +filteredUN + ": " +filteredText +"</p>")
+              $("#chats").append("<p class='chat'>" + moment(data.results[i].createdAt).format("D/M/YYYY, h:mma") + " " +filteredUN + ": " +filteredText +"</p>")
 
             }
 
@@ -98,7 +109,7 @@ $(document).ready(function(){
       $("#chats").children().remove()
     },
     addMessage : function(msg){
-      $("#chats").prepend("<div class='chat'> <p>" + msg + " </p> </div>")
+      $("#chats").prepend("<div class='chat '> <p>" + msg + " </p> </div>")
     },
     addRoom: function(room){
       $("#roomSelect").append("<div> <p>" + room + " </p> </div>")
@@ -107,7 +118,7 @@ $(document).ready(function(){
       app.user.friends.push(user)
     },
     handleSubmit: function(){
-      var msg = {text: $("#send #message").val(), username: getQueryVariable("username"), roomname: "lobby" }
+      var msg = {text: $("#send #message").val(), username: getQueryVariable("username"), roomname: app.currentRoom }
       app.send(msg)
       $("#send #message").val("");
     },
@@ -152,15 +163,16 @@ $(document).ready(function(){
 
   $(".submit").click(function(){
     event.preventDefault()
-    console.log("hey")
     app.handleSubmit()
 
   })
 
   $(document).on("click", ".room", function(){
+    // window.location.search = "username=" + getQueryVariable("username") +"&room=" + $(this).data().name
     console.log($(this).data())
     $("#chats").html("");
-    $(".roomTitle").text($(this).data().name)
+    $(".roomTitle").text($(this).data().name);
+    app.currentRoom = $(this).data().name;
     app.fetchRoom($(this).data().name);
   })
 
